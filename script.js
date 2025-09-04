@@ -1,22 +1,34 @@
-// Example: Dynamic Progress Update
-let lessonsCompleted = 7;
-let totalLessons = 10;
+ const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const Issue = require('../models/Issue'); // Mongoose model
 
-const progress = document.getElementById("progress");
-const lessonCount = document.getElementById("lesson-count");
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-function updateProgress() {
-  let percent = (lessonsCompleted / totalLessons) * 100;
-  progress.style.width = percent + "%";
-  lessonCount.textContent = lessonsCompleted;
-}
+router.post('/issues', upload.single('photo'), async (req, res) => {
+  try {
+    const { title, description, category, location } = req.body;
+    // TODO: Upload photo to cloud storage and get URL
+    const photoUrl = req.file ? await uploadToCloud(req.file) : null;
 
-// Example: Increase lesson count on click
-progress.addEventListener("click", () => {
-  if (lessonsCompleted < totalLessons) {
-    lessonsCompleted++;
-    updateProgress();
+    const newIssue = new Issue({
+      title,
+      description,
+      category,
+      location,
+      photoUrl,
+      status: 'Reported',
+      createdAt: new Date(),
+    });
+
+    await newIssue.save();
+    res.status(201).json({ message: 'Issue reported successfully', issue: newIssue });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-updateProgress();
+module.exports = router;
